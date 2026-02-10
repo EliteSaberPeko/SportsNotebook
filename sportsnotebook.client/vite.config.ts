@@ -1,14 +1,15 @@
-import { fileURLToPath, URL } from 'node:url';
+import { fileURLToPath, URL } from "node:url";
 
-import { defineConfig } from 'vite';
-import plugin from '@vitejs/plugin-vue';
-import fs from 'fs';
-import path from 'path';
-import child_process from 'child_process';
-import { env } from 'process';
+import { defineConfig } from "vite";
+import plugin from "@vitejs/plugin-vue";
+import fs from "fs";
+import path from "path";
+import child_process from "child_process";
+import { env } from "process";
+import { VitePWA } from "vite-plugin-pwa";
 
 const baseFolder =
-    env.APPDATA !== undefined && env.APPDATA !== ''
+    env.APPDATA !== undefined && env.APPDATA !== ""
         ? `${env.APPDATA}/ASP.NET/https`
         : `${env.HOME}/.aspnet/https`;
 
@@ -21,41 +22,102 @@ if (!fs.existsSync(baseFolder)) {
 }
 
 if (!fs.existsSync(certFilePath) || !fs.existsSync(keyFilePath)) {
-    if (0 !== child_process.spawnSync('dotnet', [
-        'dev-certs',
-        'https',
-        '--export-path',
-        certFilePath,
-        '--format',
-        'Pem',
-        '--no-password',
-    ], { stdio: 'inherit', }).status) {
+    if (
+        0 !==
+        child_process.spawnSync(
+            "dotnet",
+            [
+                "dev-certs",
+                "https",
+                "--export-path",
+                certFilePath,
+                "--format",
+                "Pem",
+                "--no-password",
+            ],
+            { stdio: "inherit" },
+        ).status
+    ) {
         throw new Error("Could not create certificate.");
     }
 }
 
-const target = env.ASPNETCORE_HTTPS_PORT ? `https://localhost:${env.ASPNETCORE_HTTPS_PORT}` :
-    env.ASPNETCORE_URLS ? env.ASPNETCORE_URLS.split(';')[0] : 'https://localhost:7142';
+const target = env.ASPNETCORE_HTTPS_PORT
+    ? `https://localhost:${env.ASPNETCORE_HTTPS_PORT}`
+    : env.ASPNETCORE_URLS
+      ? env.ASPNETCORE_URLS.split(";")[0]
+      : "https://localhost:7142";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-    plugins: [plugin()],
+    plugins: [
+        plugin(),
+        VitePWA({
+            registerType: "autoUpdate",
+            injectRegister: "auto",
+            devOptions: { enabled: true },
+            workbox: {
+                globPatterns: ["**/*.{js,ts,css,html,ico,png,svg}"],
+                runtimeCaching: [
+                    {
+                        urlPattern: ({ url }) => {
+                            return url.pathname.startsWith("/api/");
+                        },
+                        handler: "NetworkFirst",
+                        options: {
+                            cacheName: "api-cache",
+                            cacheableResponse: { statuses: [0, 200] },
+                        },
+                    },
+                ],
+            },
+            includeAssets: ["fonts/*.ttf", "images/*.png", "css/*.css"],
+            manifest: {
+                short_name: "Программа занятий",
+                name: "Программа занятий",
+                start_url: "/",
+                display: "standalone",
+                theme_color: "#333333",
+                background_color: "#000000",
+                orientation: "portrait",
+                icons: [
+                    {
+                        src: "/icons/192.png",
+                        sizes: "192x192",
+                        type: "image/png",
+                    },
+                    {
+                        src: "/icons/512.png",
+                        sizes: "512x512",
+                        type: "image/png",
+                    },
+                    {
+                        src: "/icons/512.png",
+                        sizes: "512x512",
+                        type: "image/png",
+                        purpose: "maskable",
+                    },
+                ],
+                prefer_related_applications: false,
+            },
+        }),
+    ],
     resolve: {
         alias: {
-            '@': fileURLToPath(new URL('./src', import.meta.url))
-        }
+            "@": fileURLToPath(new URL("./src", import.meta.url)),
+        },
     },
     server: {
         proxy: {
-            '^/weatherforecast': {
+            "/api": {
                 target,
-                secure: false
-            }
+                secure: false,
+            },
         },
-        port: parseInt(env.DEV_SERVER_PORT || '52378'),
+        port: parseInt(env.DEV_SERVER_PORT || "52378"),
         https: {
             key: fs.readFileSync(keyFilePath),
             cert: fs.readFileSync(certFilePath),
-        }
-    }
-})
+        },
+    },
+});

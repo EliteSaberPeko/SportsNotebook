@@ -4,7 +4,9 @@
         <p>This component demonstrates fetching data from the server.</p>
 
         <div v-if="loading" class="loading">
-            Loading... Please refresh once the ASP.NET backend has started. See <a href="https://aka.ms/jspsintegrationvue">https://aka.ms/jspsintegrationvue</a> for more details.
+            Loading... Please refresh once the ASP.NET backend has started. See
+            <a href="https://aka.ms/jspsintegrationvue">https://aka.ms/jspsintegrationvue</a> for
+            more details.
         </div>
 
         <div v-if="post" class="content">
@@ -31,49 +33,49 @@
 </template>
 
 <script lang="ts">
-    import { defineComponent } from 'vue';
+import { defineComponent } from "vue";
 
-    type Forecasts = {
-        date: string,
-        temperatureC: string,
-        temperatureF: string,
-        summary: string
-    }[];
+type Forecasts = {
+    date: string;
+    temperatureC: string;
+    temperatureF: string;
+    summary: string;
+}[];
 
-    interface Data {
-        loading: boolean,
-        post: null | Forecasts
-    }
+interface Data {
+    loading: boolean;
+    post: null | Forecasts;
+}
 
-    export default defineComponent({
-        data(): Data {
-            return {
-                loading: false,
-                post: null
-            };
-        },
-        async created() {
-            // fetch the data when the view is created and the data is
-            // already being observed
-            await this.fetchData();
-        },
-        watch: {
-            // call again the method if the route changes
-            '$route': 'fetchData'
-        },
-        methods: {
-            async fetchData() {
-                this.post = null;
-                this.loading = true;
+export default defineComponent({
+    data(): Data {
+        return {
+            loading: false,
+            post: null,
+        };
+    },
+    async created() {
+        // fetch the data when the view is created and the data is
+        // already being observed
+        await this.fetchData();
+    },
+    watch: {
+        // call again the method if the route changes
+        $route: "fetchData",
+    },
+    methods: {
+        async fetchData() {
+            this.post = null;
+            this.loading = true;
 
-                var response = await fetch('weatherforecast');
-                if (response.ok) {
-                    this.post = await response.json();
-                    this.loading = false;
-                }
+            const response = await fetch("/api/weatherforecast");
+            if (response.ok) {
+                this.post = await response.json();
+                this.loading = false;
             }
         },
-    });
+    },
+});
 </script>
 
 <style scoped>
@@ -81,9 +83,10 @@ th {
     font-weight: bold;
 }
 
-th, td {
-    padding-left: .5rem;
-    padding-right: .5rem;
+th,
+td {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
 }
 
 .weather-component {
